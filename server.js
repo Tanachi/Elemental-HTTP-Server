@@ -1,7 +1,10 @@
+var userName = 'Kikiyo';
+var passWord = 'Konoe';
 var http = require('http');
 var fs = require('fs');
 var server = http.createServer(function (req, res){
   if(req.method === 'POST'){
+    securityCheck(req.headers.authorization, res);
     req.on('data', function(chunk){
       var elementSymbol = '';
       var elementNumber = '';
@@ -44,7 +47,7 @@ var server = http.createServer(function (req, res){
             '<link rel="stylesheet" href="/css/styles.css">\n' +
           '</head>\n' +
           '<body>\n' +
-            '<h1>'+ capitalizeFirstLetter(elementName) + '</h1>\n' +
+            '<h1>'+ elementName.charAt(0).toUpperCase() + elementName.slice(1) + '</h1>\n' +
             '<h2>'+ elementSymbol + '</h2>\n' +
             '<h3>Atomic number '+ elementNumber + '</h3>\n' +
             '<p>' + elementDesc + '</p>\n' +
@@ -99,6 +102,7 @@ var server = http.createServer(function (req, res){
     });
   }
   if(req.method === 'PUT'){
+    securityCheck(req.headers.authorization, res);
     req.on('data', function(chunk){
       var elementSymbol = '';
       var elementNumber = '';
@@ -160,7 +164,7 @@ var server = http.createServer(function (req, res){
   }
 
   if(req.method === 'DELETE'){
-    console.log(req.url);
+    securityCheck(req.headers.authorization, res);
     fs.access('./public' + req.url, function(err) {
       if(err) {
         res.writeHead(404);
@@ -211,5 +215,21 @@ function writeElement(){
 }
 
 function writeIndex(){
+
+}
+
+function securityCheck(auth, res){
+  var pass = auth.split(' ');
+  var word = pass[1];
+  var base64Buffer = new Buffer(word, 'base64');
+  var decodedString = base64Buffer.toString();
+  var userPass = decodedString.split(':');
+  if(userPass[0] !== userName && userPass[1] !== passWord){
+    res.writeHead(401, {
+    'WWW-Authenticate': 'Basic realm="My Server"',
+    'Content-Length':0});
+    res.write('<html><body>Not Authorized</body></html>');
+    res.end();
+  }
 
 }
