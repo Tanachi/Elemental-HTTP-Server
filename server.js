@@ -93,24 +93,85 @@ var server = http.createServer(function (req, res){
             });
         });
 
-      res.end();
+        res.end();
         }
       });
     });
   }
   if(req.method === 'PUT'){
     req.on('data', function(chunk){
-      console.log(chunk.toString());
+      var elementSymbol = '';
+      var elementNumber = '';
+      var elementName = '';
+      var elementDesc = '';
+      var elementList = '';
+      var elementCount = -1;
+      var stuff = chunk.toString().split('&');
+      stuff.forEach(function(element, index, value){
+
+        var keySplit = element.split('=');
+        if(keySplit[0] === 'elementName'){
+          elementName = keySplit[1];
+        }
+        if(keySplit[0] === 'elementSymbol'){
+          elementSymbol = keySplit[1];
+        }
+        if(keySplit[0] === 'elementAtomicNumber'){
+          elementNumber = keySplit[1];
+        }
+        if(keySplit[0] === 'elementDescription'){
+          var plusSplit = keySplit[1].split('+');
+          elementDesc= plusSplit.join(' ');
+        }
+
+      });
+      fs.access('./public/' + elementName.toLowerCase() + '.html', fs.F_OK, function(err){
+        if(!err){
+          var elementPage ='<!DOCTYPE html>\n' +
+          '<html lang="en">\n' +
+          '<head>\n' +
+            '<meta charset="UTF-8">\n' +
+            '<title>The Elements - '+ elementName.charAt(0).toUpperCase() + elementName.slice(1) +'</title>\n' +
+            '<link rel="stylesheet" href="/css/styles.css">\n' +
+          '</head>\n' +
+          '<body>\n' +
+            '<h1>'+ capitalizeFirstLetter(elementName) + '</h1>\n' +
+            '<h2>'+ elementSymbol + '</h2>\n' +
+            '<h3>Atomic number '+ elementNumber + '</h3>\n' +
+            '<p>' + elementDesc + '</p>\n' +
+            '<p><a href="/">back</a></p>\n' +
+          '</body>\n' +
+          '</html>';
+
+
+          fs.writeFile('./public/'+elementName + '.html', elementPage, 'utf8', function(err){
+            if(err)
+              throw err;
+          });
+          res.end();
+        }
+        else{
+          res.writeHead(404);
+          res.end();
+        }
+      });
     });
     res.end();
   }
 
   if(req.method === 'DELETE'){
-
-  }
-
-  if(req.method === 'GET'){
-
+    console.log(req.url);
+    fs.access('./public' + req.url, function(err) {
+      if(err) {
+        res.writeHead(404);
+        res.end();
+      }
+      else {
+        fs.unlink('./public' + req.url);
+        res.writeHead(200);
+        res.end();
+      }
+    });
   }
 });
 
@@ -151,8 +212,4 @@ function writeElement(){
 
 function writeIndex(){
 
-}
-
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
 }
